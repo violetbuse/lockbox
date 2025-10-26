@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { mutex_table } from "./schema";
 import { and } from "drizzle-orm";
 import { delete_if_expired } from "./util";
+import { count } from "drizzle-orm";
 
 const base = os.$context<{ db: DB }>().$route({ inputStructure: "detailed" });
 
@@ -43,7 +44,7 @@ const acquire_mutex = base
       context: { db },
     }) => {
       try {
-        await delete_if_expired(db);
+        await delete_if_expired(db, resource_id);
 
         const result = await db
           .insert(mutex_table)
@@ -153,7 +154,7 @@ const refresh_mutex = base
       context: { db },
     }) => {
       try {
-        await delete_if_expired(db);
+        await delete_if_expired(db, resource_id);
 
         await db
           .update(mutex_table)
@@ -220,7 +221,7 @@ const release_mutex = base
       context: { db },
     }) => {
       try {
-        await delete_if_expired(db);
+        await delete_if_expired(db, resource_id);
 
         const current_state = await db.query.mutex_table.findFirst({
           where: eq(mutex_table.resource, resource_id),
@@ -251,9 +252,21 @@ const release_mutex = base
     },
   );
 
+const health_check = base
+  .route({
+    method: "GET",
+    path: "/health-check",
+  })
+  .output(z.object({ status: z.literal("success") }))
+  .handler(async ({ context: { db } }) => {
+    const result = db.select({ count: count() }).from(mutex_table).get();
+    return { status: "success" };
+  });
+
 export const router = {
   acquire_mutex,
   get_mutex,
   refresh_mutex,
   release_mutex,
+  health_check,
 };
