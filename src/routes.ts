@@ -5,6 +5,7 @@ import type { DB } from "./database";
 import { eq } from "drizzle-orm";
 import { mutex_table } from "./schema";
 import { and } from "drizzle-orm";
+import { delete_if_expired } from "./util";
 
 const base = os.$context<{ db: DB }>().$route({ inputStructure: "detailed" });
 
@@ -42,6 +43,8 @@ const acquire_mutex = base
       context: { db },
     }) => {
       try {
+        await delete_if_expired(db);
+
         const result = await db
           .insert(mutex_table)
           .values({
@@ -102,6 +105,10 @@ const get_mutex = base
         return { data: null };
       }
 
+      if (result.expires_at < new Date()) {
+        return { data: null };
+      }
+
       return {
         data: {
           nonce: result.nonce,
@@ -146,6 +153,8 @@ const refresh_mutex = base
       context: { db },
     }) => {
       try {
+        await delete_if_expired(db);
+
         await db
           .update(mutex_table)
           .set({
@@ -211,6 +220,8 @@ const release_mutex = base
       context: { db },
     }) => {
       try {
+        await delete_if_expired(db);
+
         const current_state = await db.query.mutex_table.findFirst({
           where: eq(mutex_table.resource, resource_id),
         });
@@ -223,7 +234,7 @@ const release_mutex = base
           return { status: "success" };
         }
 
-        const update_result = await db
+        await db
           .delete(mutex_table)
           .where(
             and(
