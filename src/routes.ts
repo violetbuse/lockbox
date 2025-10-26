@@ -1,8 +1,14 @@
 import { os } from "@orpc/server";
 import { z } from "zod";
+import { nanoid } from "nanoid";
 import type { DB } from "./database";
+import { eq } from "drizzle-orm";
+import { mutex_table } from "./schema";
+import { and } from "drizzle-orm";
 
 const base = os.$context<{ db: DB }>().$route({ inputStructure: "detailed" });
+
+const TWO_MINUTES = 2 * 60 * 1000;
 
 const acquire_mutex = base
   .route({
@@ -28,15 +34,42 @@ const acquire_mutex = base
       z.object({ status: z.literal("failure") }),
     ]),
   )
-  .handler(async ({ input, context }) => {
-    throw new Error("Not implemented");
-  });
+  .handler(
+    async ({
+      input: {
+        params: { resource_id },
+      },
+      context: { db },
+    }) => {
+      try {
+        const result = await db
+          .insert(mutex_table)
+          .values({
+            resource: resource_id,
+            nonce: nanoid(),
+            expires_at: new Date(Date.now() + TWO_MINUTES),
+          })
+          .returning()
+          .get();
+        return {
+          status: "success",
+          data: {
+            nonce: result.nonce,
+            expires_at: Math.round(result.expires_at.getTime() / 1000),
+          },
+        };
+      } catch (error) {
+        console.error(error);
+        return { status: "failure" };
+      }
+    },
+  );
 
 const get_mutex = base
   .route({
     method: "GET",
     path: "/mutex/{resource_id}",
-    description: "Get a mutex",
+    description: "Query a mutex",
     tags: ["Mutex"],
   })
   .input(
@@ -45,20 +78,38 @@ const get_mutex = base
     }),
   )
   .output(
-    z.discriminatedUnion("status", [
-      z.object({
-        status: z.literal("success"),
-        data: z.object({
+    z.object({
+      data: z
+        .object({
           nonce: z.string(),
           expires_at: z.int(),
-        }),
-      }),
-      z.object({ status: z.literal("failure") }),
-    ]),
+        })
+        .nullable(),
+    }),
   )
-  .handler(async ({ input, context }) => {
-    throw new Error("Not implemented");
-  });
+  .handler(
+    async ({
+      input: {
+        params: { resource_id },
+      },
+      context: { db },
+    }) => {
+      const result = await db.query.mutex_table.findFirst({
+        where: eq(mutex_table.resource, resource_id),
+      });
+
+      if (!result) {
+        return { data: null };
+      }
+
+      return {
+        data: {
+          nonce: result.nonce,
+          expires_at: Math.round(result.expires_at.getTime() / 1000),
+        },
+      };
+    },
+  );
 
 const refresh_mutex = base
   .route({
@@ -87,9 +138,50 @@ const refresh_mutex = base
       z.object({ status: z.literal("failure") }),
     ]),
   )
-  .handler(async ({ input, context }) => {
-    throw new Error("Not implemented");
-  });
+  .handler(
+    async ({
+      input: {
+        params: { resource_id, nonce },
+      },
+      context: { db },
+    }) => {
+      try {
+        const result = await db
+          .update(mutex_table)
+          .set({
+            expires_at: new Date(Date.now() + TWO_MINUTES),
+          })
+          .where(
+            and(
+              eq(mutex_table.resource, resource_id),
+              eq(mutex_table.nonce, nonce),
+            ),
+          )
+          .returning();
+
+        if (result.length === 0) {
+          return { status: "failure" };
+        }
+
+        const data = result[0];
+
+        if (!data) {
+          throw new Error("Data not found");
+        }
+
+        return {
+          status: "success",
+          data: {
+            nonce: data.nonce,
+            expires_at: Math.round(data.expires_at.getTime() / 1000),
+          },
+        };
+      } catch (error) {
+        console.error(error);
+        return { status: "failure" };
+      }
+    },
+  );
 
 const release_mutex = base
   .route({
@@ -111,9 +203,42 @@ const release_mutex = base
       status: z.union([z.literal("failure"), z.literal("success")]),
     }),
   )
-  .handler(async ({ input, context }) => {
-    throw new Error("Not implemented");
-  });
+  .handler(
+    async ({
+      input: {
+        params: { resource_id, nonce },
+      },
+      context: { db },
+    }) => {
+      try {
+        const current_state = await db.query.mutex_table.findFirst({
+          where: eq(mutex_table.resource, resource_id),
+        });
+
+        if (!current_state) {
+          return { status: "success" };
+        }
+
+        if (current_state.resource !== nonce) {
+          return { status: "success" };
+        }
+
+        const update_result = await db
+          .delete(mutex_table)
+          .where(
+            and(
+              eq(mutex_table.resource, resource_id),
+              eq(mutex_table.nonce, nonce),
+            ),
+          );
+
+        return { status: "success" };
+      } catch (error) {
+        console.error(error);
+        return { status: "failure" };
+      }
+    },
+  );
 
 export const router = {
   acquire_mutex,
