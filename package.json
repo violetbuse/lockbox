@@ -1,5 +1,5 @@
 {
-  "name": "@violet/lockbox",
+  "name": "@violetbuse/lockbox",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -18,7 +18,11 @@
     "start": "node dist/index.js server"
   },
   "keywords": [],
-  "author": "",
+  "author": "violet buse",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/violetbuse/lockbox"
+  },
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
