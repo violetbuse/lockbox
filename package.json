@@ -1,21 +1,28 @@
 {
-  "name": "lockbox",
+  "name": "@violet/lockbox",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "files": [
+    "dist/**/*"
+  ],
+  "bin": {
+    "lockbox": "dist/index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js server"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
     "@types/node": "^24.9.1",
     "drizzle-kit": "^0.31.5",
     "tsx": "^4.20.6",
@@ -26,11 +33,14 @@
     "@orpc/client": "^1.10.1",
     "@orpc/json-schema": "^1.10.1",
     "@orpc/openapi": "^1.10.1",
+    "@orpc/openapi-client": "^1.10.2",
     "@orpc/server": "^1.10.1",
     "@orpc/zod": "^1.10.1",
+    "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
     "nanoid": "^5.1.6",
+    "node-fetch": "^3.3.2",
     "zod": "^4.1.12"
   }
 }
