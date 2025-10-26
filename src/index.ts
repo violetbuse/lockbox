@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { OpenAPIHandler } from "@orpc/openapi/node";
 import { router } from "./routes";
 import { createServer } from "node:http";
@@ -5,6 +6,7 @@ import { ZodSmartCoercionPlugin } from "@orpc/zod";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import package_json from "../package.json";
+import { db } from "./database";
 
 const port = 8080;
 
@@ -25,7 +27,7 @@ const handler = new OpenAPIHandler(router, {
 
 const server = createServer(async (req, res) => {
   const result = await handler.handle(req, res, {
-    context: {},
+    context: { db },
   });
 
   if (!result.matched) {

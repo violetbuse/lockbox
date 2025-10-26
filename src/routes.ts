@@ -1,7 +1,8 @@
 import { os } from "@orpc/server";
 import { z } from "zod";
+import type { DB } from "./database";
 
-const base = os.$context<{}>().$route({ inputStructure: "detailed" });
+const base = os.$context<{ db: DB }>().$route({ inputStructure: "detailed" });
 
 const acquire_mutex = base
   .route({
