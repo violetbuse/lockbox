@@ -146,7 +146,7 @@ const refresh_mutex = base
       context: { db },
     }) => {
       try {
-        const result = await db
+        await db
           .update(mutex_table)
           .set({
             expires_at: new Date(Date.now() + TWO_MINUTES),
@@ -156,24 +156,24 @@ const refresh_mutex = base
               eq(mutex_table.resource, resource_id),
               eq(mutex_table.nonce, nonce),
             ),
-          )
-          .returning();
+          );
 
-        if (result.length === 0) {
+        const result = await db.query.mutex_table.findFirst({
+          where: and(
+            eq(mutex_table.resource, resource_id),
+            eq(mutex_table.nonce, nonce),
+          ),
+        });
+
+        if (!result) {
           return { status: "failure" };
-        }
-
-        const data = result[0];
-
-        if (!data) {
-          throw new Error("Data not found");
         }
 
         return {
           status: "success",
           data: {
-            nonce: data.nonce,
-            expires_at: Math.round(data.expires_at.getTime() / 1000),
+            nonce: result.nonce,
+            expires_at: Math.floor(result.expires_at.getTime() / 1000),
           },
         };
       } catch (error) {
