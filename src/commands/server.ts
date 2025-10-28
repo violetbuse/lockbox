@@ -20,6 +20,14 @@ export const server_command = new Command()
       .default("file:lockbox.db")
       .env("DB_FILE_NAME"),
   )
+  .addOption(
+    new Option(
+      "-l, --length <seconds>",
+      "the duration of any mutex lock before it is automatically released",
+    )
+      .default("180")
+      .env("LOCK_DURATION"),
+  )
   .action((input) => {
     const port = parseInt(input.port);
 
@@ -28,5 +36,12 @@ export const server_command = new Command()
       process.exit(1);
     }
 
-    start_server(port, input.authKey || null, input.db);
+    const duration = parseInt(input.length);
+
+    if (isNaN(duration) || duration < 0) {
+      console.error("Invalid duration");
+      process.exit(1);
+    }
+
+    start_server(port, input.authKey || null, input.db, duration);
   });

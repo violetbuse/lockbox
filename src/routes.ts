@@ -8,9 +8,9 @@ import { and } from "drizzle-orm";
 import { delete_if_expired } from "./util";
 import { count } from "drizzle-orm";
 
-const base = os.$context<{ db: DB }>().$route({ inputStructure: "detailed" });
-
-const TWO_MINUTES = 2 * 60 * 1000;
+const base = os
+  .$context<{ db: DB; lock_duration_secs: number }>()
+  .$route({ inputStructure: "detailed" });
 
 const acquire_mutex = base
   .route({
@@ -41,7 +41,7 @@ const acquire_mutex = base
       input: {
         params: { resource_id },
       },
-      context: { db },
+      context: { db, lock_duration_secs },
     }) => {
       try {
         await delete_if_expired(db, resource_id);
@@ -51,7 +51,7 @@ const acquire_mutex = base
           .values({
             resource: resource_id,
             nonce: nanoid(),
-            expires_at: new Date(Date.now() + TWO_MINUTES),
+            expires_at: new Date(Date.now() + lock_duration_secs * 1000),
           })
           .returning()
           .get();
@@ -151,7 +151,7 @@ const refresh_mutex = base
       input: {
         params: { resource_id, nonce },
       },
-      context: { db },
+      context: { db, lock_duration_secs },
     }) => {
       try {
         await delete_if_expired(db, resource_id);
@@ -159,7 +159,7 @@ const refresh_mutex = base
         await db
           .update(mutex_table)
           .set({
-            expires_at: new Date(Date.now() + TWO_MINUTES),
+            expires_at: new Date(Date.now() + lock_duration_secs * 1000),
           })
           .where(
             and(

@@ -9,6 +9,7 @@ primary_region = 'iad'
 [env]
   DB_FILE_NAME = "file:/litefs/lockbox.db"
   PORT = "8080"
+  LOCK_DURATION = "240"
 
 [build]
 

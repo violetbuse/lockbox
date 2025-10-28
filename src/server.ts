@@ -11,6 +11,7 @@ export const start_server = (
   port: number,
   auth_key: string | null,
   db_url: string,
+  lock_duration: number,
 ) => {
   const handler = new OpenAPIHandler(router, {
     plugins: [
@@ -46,7 +47,7 @@ export const start_server = (
     }
 
     const result = await handler.handle(req, res, {
-      context: { db },
+      context: { db, lock_duration_secs: lock_duration },
     });
 
     if (!result.matched) {
