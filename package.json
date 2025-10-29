@@ -27,6 +27,7 @@
   "type": "commonjs",
   "devDependencies": {
     "@commander-js/extra-typings": "^14.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.9.1",
     "drizzle-kit": "^0.31.5",
     "tsx": "^4.20.6",
@@ -40,6 +41,7 @@
     "@orpc/openapi-client": "^1.10.2",
     "@orpc/server": "^1.10.1",
     "@orpc/zod": "^1.10.1",
+    "better-sqlite3": "^12.4.1",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",

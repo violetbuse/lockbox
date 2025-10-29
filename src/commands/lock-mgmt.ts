@@ -41,7 +41,9 @@ const lock_command = new Command()
 
         console.log("Locked resource.");
         console.log(`nonce: ${result.data.nonce}`);
-        console.log(`expires_at: ${expires_at.toDateString()}`);
+        console.log(
+          `expires_at: ${expires_at.toTimeString()} ${expires_at.toDateString()}`,
+        );
       }
     }
   });
@@ -62,9 +64,11 @@ const get_lock_command = new Command()
       process.exit(1);
     }
 
+    const expires_at = new Date(result.data.expires_at * 1000);
+
     console.log(`nonce: ${result.data.nonce}`);
     console.log(
-      `expires_at: ${new Date(result.data.expires_at * 1000).toDateString()}`,
+      `expires_at: ${expires_at.toTimeString()} ${expires_at.toDateString()}`,
     );
   });
 
@@ -90,7 +94,9 @@ const refresh_command = new Command()
 
         console.log("Locked resource.");
         console.log(`nonce: ${result.data.nonce}`);
-        console.log(`expires_at: ${expires_at.toDateString()}`);
+        console.log(
+          `expires_at: ${expires_at.toTimeString()} ${expires_at.toDateString()}`,
+        );
       }
     }
   });
